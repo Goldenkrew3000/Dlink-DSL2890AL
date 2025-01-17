@@ -1,0 +1,49 @@
+--- fresh-tomato-clean/release/src-rt-6.x.4708/router/shared/led.c	2025-01-16 13:57:56.070265408 +1000
++++ fresh-tomato-modified/release/src-rt-6.x.4708/router/shared/led.c	2025-01-17 14:58:28.161225850 +1000
+@@ -216,6 +216,28 @@
+ 		model = get_model();
+ 	}
+ 
++	/* Bypass stealth mode */
++	switch (model) {
++		case MODEL_DSL2890AL:
++			if (which == LED_5G) {
++				if (mode == LED_ON) {
++					set_gpio(GPIO_15, T_LOW);
++				} else if (mode == LED_OFF) {
++					set_gpio(GPIO_15, T_HIGH);
++				}
++			} else if (which == LED_WLAN) {
++				// Not sure whether this is WLAN in general or 2.4G
++				if (mode == LED_ON) {
++					set_gpio(GPIO_14, T_LOW);
++				} else if (mode == LED_OFF) {
++					set_gpio(GPIO_14, T_HIGH);
++				}
++			}
++			break;
++		default:
++			break;
++	}
++
+ 	/* stealth mode ON ? */
+ 	if (nvram_match("stealth_mode", "1")) {
+ 		/* turn off WLAN LEDs for some Asus/Tenda Router: AC15, AC18, RT-N18U, RT-AC56U, RT-AC66U_B1, RT-AC67U, RT-AC68U (V3), RT-AC1900P, RT-AC3200, RT-AC3100, RT-AC88U, RT-AC5300 */
+@@ -767,6 +789,17 @@
+ 	/* get router model */
+ 	model = get_model();
+ 
++	/* Bypass the nvram stealth_mode check */
++	switch (model) {
++		case MODEL_DSL2890AL:
++			// GPIO 0 Pulled high and GPIO 0 Pulled low will turn the Power LED Green
++			set_gpio(GPIO_00, T_HIGH);
++			set_gpio(GPIO_01, T_LOW);
++			break;
++		default:
++			break;
++	}
++
+ 	/* stealth mode on ? */
+ 	if (nvram_match("stealth_mode", "1")) {
+ 

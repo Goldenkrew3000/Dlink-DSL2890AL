@@ -1,0 +1,10 @@
+--- fresh-tomato-clean/release/src-rt-6.x.4708/router/shared/shared.h	2025-01-16 13:57:56.070265408 +1000
++++ fresh-tomato-modified/release/src-rt-6.x.4708/router/shared/shared.h	2025-01-16 13:35:26.485353202 +1000
+@@ -235,6 +235,7 @@
+ 	MODEL_R8000,
+ #endif
+ 	MODEL_DIR868L,
++	MODEL_DSL2890AL,
+ 	MODEL_WS880,
+ 	MODEL_EA6350v1,
+ 	MODEL_EA6350v2,

@@ -1,0 +1,343 @@
+--- fresh-tomato-clean/release/src-rt-6.x.4708/router/rc/init.c	2025-01-16 13:57:55.262261100 +1000
++++ fresh-tomato-modified/release/src-rt-6.x.4708/router/rc/init.c	2025-01-18 05:58:21.599304433 +1000
+@@ -1172,6 +1172,11 @@
+ 		dirty |= check_nv("vlan1ports", "0 1 2 3 5*");
+ 		dirty |= check_nv("vlan2ports", "4 5");
+ 		break;
++	case MODEL_DSL2890AL:
++		// Configured so a fresh reset has the WAN port defined as the LAN port next to the USB 2 port
++		dirty |= check_nv("vlan1ports", "1 2 3 5*");
++		dirty |= check_nv("vlan2ports", "0 5");
++		break;
+ 	case MODEL_DSLAC68U:
+ 		dirty |= check_nv("vlan1ports", "2 3 4 5*");
+ 		dirty |= check_nv("vlan2ports", "1 5");
+@@ -8707,6 +8712,328 @@
+ 			} /* Case DIR868L rev A1/B1 */
+ 		}
+ 		break;
++	case MODEL_DSL2890AL:
++		// Note: This ONLY supports boardrev 0x1110
++		// Note: 90% of this is copied from the DIR868L
++		mfr = "D-Link";
++		name = "DSL2890AL";
++		features = SUP_SES | SUP_80211N | SUP_1000ET | SUP_80211AC;
++#ifdef TCONFIG_USB
++		nvram_set("usb_uhci", "-1");
++#endif
++		if (!nvram_match("t_fix1", (char *)name)) {
++			nvram_set("vlan1hwname", "et0");
++			nvram_set("vlan2hwname", "et0");
++			nvram_set("lan_ifname", "br0");
++			nvram_set("landevs", "vlan1 wl0 wl1");
++			nvram_set("lan_ifnames", "vlan1 eth1 eth2");
++			nvram_set("wan_ifnames", "vlan2");
++			nvram_set("wan_ifnameX", "vlan2");
++			nvram_set("wandevs", "vlan2");
++			nvram_set("wl_ifnames", "eth1 eth2");
++			nvram_set("wl_ifname", "eth1");
++			nvram_set("wl0_ifname", "eth1");
++			nvram_set("wl1_ifname", "eth2");
++			nvram_set("wl0_vifnames", "wl0.1 wl0.2 wl0.3");
++			nvram_set("wl1_vifnames", "wl1.1 wl1.2 wl1.3");
++
++			/* fix MAC addresses */
++			strlcpy(s, nvram_safe_get("et0macaddr"), sizeof(s));	/* get et0 MAC address for LAN */
++			inc_mac(s, +2, sizeof(s));				/* MAC + 1 will be for WAN */
++			nvram_set("pci/1/1/macaddr", s);			/* fix WL mac for 2,4G */
++			nvram_set("wl0_hwaddr", s);
++			inc_mac(s, +4, sizeof(s));				/* do not overlap with VIFs */
++			nvram_set("pci/2/1/macaddr", s);			/* fix WL mac for 5G */
++			nvram_set("wl1_hwaddr", s);
++
++			/* wifi country settings */
++			nvram_set("pci/1/1/regrev", "12");
++			nvram_set("pci/2/1/regrev", "12");
++			nvram_set("pci/1/1/ccode", "SG");
++			nvram_set("pci/2/1/ccode", "SG");
++
++			/* enable 5 GHz WLAN for rev A1/B1 */
++			nvram_unset("devpath1");
++
++			/* usb3.0 settings */
++			nvram_set("usb_usb3", "0");
++			nvram_set("xhci_ports", "1-1");
++			nvram_set("ehci_ports", "2-1 2-2");
++			nvram_set("ohci_ports", "3-1 3-2");
++
++			/* enable usbX power supply by default */
++			nvram_set("gpio10", "usbport2"); /* Ex.: this config is correct for DIR868L */
++
++			/* misc settings */
++			nvram_set("boot_wait", "on");
++			nvram_set("wait_time", "3");
++
++			/* wifi settings/channels */
++			nvram_set("wl0_bw_cap","3");
++			nvram_set("wl0_chanspec","6u");
++			nvram_set("wl0_channel","6");
++			nvram_set("wl0_nbw","40");
++			nvram_set("wl0_nctrlsb", "upper");
++			nvram_set("wl1_bw_cap", "7");
++			nvram_set("wl1_chanspec", "36/80");
++			nvram_set("wl1_channel", "36");
++			nvram_set("wl1_nbw","80");
++			nvram_set("wl1_nbw_cap","3");
++			nvram_set("wl1_nctrlsb", "lower");
++
++			/* misc wifi settings */
++			nvram_set("wl0_vreqd", "0"); /* do not enable vhtmode and vht_features for 2G NON-AC PHY */
++		
++			struct nvram_tuple dir868lab_pci_1_1_params[] = {
++			/* bcm4360ac_defaults - fix problem of loading driver failed with code 21 */
++				{ "aa2g", "7", 0 },
++				{ "agbg0", "71", 0 },
++				{ "agbg1", "71", 0 },
++				{ "agbg2", "71", 0 },
++				{ "antswitch", "0", 0 },
++				{ "boardflags", "0x1000", 0 },
++				{ "boardflags2", "0x100002", 0 },
++				{ "boardflags3", "0x10000003", 0 },
++				{ "boardnum", "57359", 0 },
++				{ "boardrev", "0x1150", 0 },
++				{ "boardtype", "0x661", 0 },
++				{ "cckbw202gpo", "0", 0 },
++				{ "cckbw20ul2gpo", "0", 0 },
++				//{ "ccode", "SG", 0 },
++				{ "devid", "0x43a1", 0 },
++				{ "dot11agduphrpo", "0", 0 },
++				{ "dot11agduplrpo", "0", 0 },
++				{ "dot11agofdmhrbw202gpo", "0xCA86", 0 },
++				{ "epagain2g", "0", 0 },
++				{ "femctrl", "3", 0 },
++				{ "gainctrlsph", "0", 0 },
++				//{ "macaddr", "E4:F4:C6:01:47:7C", 0 },
++				{ "maxp2ga0", "106", 0 },
++				{ "maxp2ga1", "106", 0 },
++				{ "maxp2ga2", "106", 0 },
++				{ "mcsbw202gpo", "0xA976A600", 0 },
++				{ "mcsbw402gpo", "0xA976A600", 0 },
++				{ "measpower", "0x7f", 0 },
++				{ "measpower1", "0x7f", 0 },
++				{ "measpower2", "0x7f", 0 },
++				{ "noiselvl2ga0", "31", 0 },
++				{ "noiselvl2ga1", "31", 0 },
++				{ "noiselvl2ga2", "31", 0 },
++				{ "ofdmlrbw202gpo", "0", 0 },
++				{ "pa2ga0", "0xFF32,0x1C30,0xFCA3", 0 },
++				{ "pa2ga1", "0xFF35,0x1BE3,0xFCB0", 0 },
++				{ "pa2ga2", "0xFF33,0x1BE1,0xFCB0", 0 },
++				{ "papdcap2g", "0", 0 },
++				{ "pdgain2g", "14", 0 },
++				{ "pdoffset2g40ma0", "15", 0 },
++				{ "pdoffset2g40ma1", "15", 0 },
++				{ "pdoffset2g40ma2", "15", 0 },
++				{ "pdoffset2g40mvalid", "1", 0 },
++				{ "pdoffset40ma0", "0", 0 },
++				{ "pdoffset40ma1", "0", 0 },
++				{ "pdoffset40ma2", "0", 0 },
++				{ "pdoffset80ma0", "0", 0 },
++				{ "pdoffset80ma1", "0", 0 },
++				{ "pdoffset80ma2", "0", 0 },
++				//{ "regrev", "66", 0 },
++				{ "rpcal2g", "0x5f7", 0 },
++				{ "rxgainerr2ga0", "63", 0 },
++				{ "rxgainerr2ga1", "31", 0 },
++				{ "rxgainerr2ga2", "31", 0 },
++				{ "rxgains2gelnagaina0", "3", 0 },
++				{ "rxgains2gelnagaina1", "3", 0 },
++				{ "rxgains2gelnagaina2", "3", 0 },
++				{ "rxgains2gtrelnabypa0", "1", 0 },
++				{ "rxgains2gtrelnabypa1", "1", 0 },
++				{ "rxgains2gtrelnabypa2", "1", 0 },
++				{ "rxgains2gtrisoa0", "7", 0 },
++				{ "rxgains2gtrisoa1", "7", 0 },
++				{ "rxgains2gtrisoa2", "7", 0 },
++				{ "sar2g", "18", 0 },
++				{ "sromrev", "11", 0 },
++				{ "subband5gver", "0x4", 0 },
++				{ "subvid", "0x14e4", 0 },
++				{ "tssifloor2g", "0x3ff", 0 },
++				{ "tssiposslope2g", "1", 0 },
++				{ "tworangetssi2g", "0", 0 },
++				{ "xtalfreq", "65535", 0 },
++				{ 0, 0, 0 }
++			};
++
++			struct nvram_tuple dir868lab_pci_2_1_params[] = {
++				{ "aa2g", "7", 0 },
++				{ "aa5g", "0", 0 },
++				{ "aga0", "0", 0 },
++				{ "aga1", "0", 0 },
++				{ "aga2", "0", 0 },
++				{ "agbg0", "0", 0 },
++				{ "agbg1", "0", 0 },
++				{ "agbg2", "0", 0 },
++				{ "antswitch", "0", 0 },
++				{ "boardflags", "0x30000000", 0 },
++				{ "boardflags2", "0x300002", 0 },
++				{ "boardflags3", "0x10000000", 0 },
++				{ "boardnum", "20507", 0 },
++				{ "boardrev", "0x1451", 0 },
++				{ "boardtype", "0x621", 0 },
++				{ "cckbw202gpo", "0", 0 },
++				{ "cckbw20ul2gpo", "0", 0 },
++				//{ "ccode", "SG", 0 },
++				{ "devid", "0x43a2", 0 },
++				{ "dot11agduphrpo", "0", 0 },
++				{ "dot11agduplrpo", "0", 0 },
++				{ "dot11agofdmhrbw202gpo", "0", 0 },
++				{ "epagain2g", "0", 0 },
++				{ "epagain5g", "0", 0 },
++				{ "femctrl", "3", 0 },
++				{ "gainctrlsph", "0", 0 },
++				//{ "macaddr", "E4:F4:C6:01:47:7B", 0 },
++				{ "maxp2ga0", "76", 0 },
++				{ "maxp2ga1", "76", 0 },
++				{ "maxp2ga2", "76", 0 },
++				{ "maxp5ga0", "106,106,106,106", 0 },
++				{ "maxp5ga1", "106,106,106,106", 0 },
++				{ "maxp5ga2", "106,106,106,106", 0 },
++				{ "mcsbw1605ghpo", "0", 0 },
++				{ "mcsbw1605glpo", "0", 0 },
++				{ "mcsbw1605gmpo", "0", 0 },
++				{ "mcsbw1605hpo", "0", 0 },
++				{ "mcsbw202gpo", "0", 0 },
++				{ "mcsbw205ghpo", "0xBA768600", 0 },
++				{ "mcsbw205glpo", "0xBA768600", 0 },
++				{ "mcsbw205gmpo", "0xBA768600", 0 },
++				{ "mcsbw402gpo", "0", 0 },
++				{ "mcsbw405ghpo", "0xBA768600", 0 },
++				{ "mcsbw405glpo", "0xBA768600", 0 },
++				{ "mcsbw405gmpo", "0xBA768600", 0 },
++				{ "mcsbw805ghpo", "0xBA768600", 0 },
++				{ "mcsbw805glpo", "0xBA768600", 0 },
++				{ "mcsbw805gmpo", "0xBA768600", 0 },
++				{ "mcslr5ghpo", "0", 0 },
++				{ "mcslr5glpo", "0", 0 },
++				{ "mcslr5gmpo", "0", 0 },
++				{ "measpower", "0x7f", 0 },
++				{ "measpower1", "0x7f", 0 },
++				{ "measpower2", "0x7f", 0 },
++				{ "noiselvl2ga0", "31", 0 },
++				{ "noiselvl2ga1", "31", 0 },
++				{ "noiselvl2ga2", "31", 0 },
++				{ "noiselvl5ga0", "31,31,31,31", 0 },
++				{ "noiselvl5ga1", "31,31,31,31", 0 },
++				{ "noiselvl5ga2", "31,31,31,31", 0 },
++				{ "ofdmlrbw202gpo", "0", 0 },
++				{ "pa2ga0", "0xfe72,0x14c0,0xfac7", 0 },
++				{ "pa2ga1", "0xfe80,0x1472,0xfabc", 0 },
++				{ "pa2ga2", "0xfe82,0x14bf,0xfad9", 0 },
++				{ "pa5ga0", "0xFF4C,0x1808,0xFD1B,0xFF4C,0x18CF,0xFD0C,0xFF4A,0x1920,0xFD08,0xFF4C,0x1949,0xFCF6", 0 },
++				{ "pa5ga1", "0xFF4A,0x18AC,0xFD0B,0xFF44,0x1904,0xFCFF,0xFF56,0x1A09,0xFCFC,0xFF4F,0x19AB,0xFCEF", 0 },
++				{ "pa5ga2", "0xFF4C,0x1896,0xFD11,0xFF43,0x192D,0xFCF5,0xFF50,0x19EE,0xFCF1,0xFF52,0x19C6,0xFCF1", 0 },
++				{ "papdcap2g", "0", 0 },
++				{ "papdcap5g", "0", 0 },
++				{ "pdgain2g", "4", 0 },
++				{ "pdgain5g", "4", 0 },
++				{ "pdoffset2g40ma0", "15", 0 },
++				{ "pdoffset2g40ma1", "15", 0 },
++				{ "pdoffset2g40ma2", "15", 0 },
++				{ "pdoffset2g40mvalid", "1", 0 },
++				{ "pdoffset40ma0", "4369", 0 },
++				{ "pdoffset40ma1", "4369", 0 },
++				{ "pdoffset40ma2", "4369", 0 },
++				{ "pdoffset80ma0", "0", 0 },
++				{ "pdoffset80ma1", "0", 0 },
++				{ "pdoffset80ma2", "0", 0 },
++				{ "phycal_tempdelta", "255", 0 },
++				{ "rawtempsense", "0x1ff", 0 },
++				//{ "regrev", "66", 0 },
++				{ "rpcal2g", "0", 0 },
++				{ "rpcal5gb0", "0x610c", 0 },
++				{ "rpcal5gb1", "0x6a09", 0 },
++				{ "rpcal5gb2", "0x5eff", 0 },
++				{ "rpcal5gb3", "0x700c", 0 },
++				{ "rxchain", "7", 0 },
++				{ "rxgainerr2ga0", "63", 0 },
++				{ "rxgainerr2ga1", "31", 0 },
++				{ "rxgainerr2ga2", "31", 0 },
++				{ "rxgainerr5ga0", "63,63,63,63", 0 },
++				{ "rxgainerr5ga1", "31,31,31,31", 0 },
++				{ "rxgainerr5ga2", "31,31,31,31", 0 },
++				{ "rxgains2gelnagaina0", "0", 0 },
++				{ "rxgains2gelnagaina1", "0", 0 },
++				{ "rxgains2gelnagaina2", "0", 0 },
++				{ "rxgains2gtrelnabypa0", "0", 0 },
++				{ "rxgains2gtrelnabypa1", "0", 0 },
++				{ "rxgains2gtrelnabypa2", "0", 0 },
++				{ "rxgains2gtrisoa0", "0", 0 },
++				{ "rxgains2gtrisoa1", "0", 0 },
++				{ "rxgains2gtrisoa2", "0", 0 },
++				{ "rxgains5gelnagaina0", "4", 0 },
++				{ "rxgains5gelnagaina1", "4", 0 },
++				{ "rxgains5gelnagaina2", "4", 0 },
++				{ "rxgains5ghelnagaina0", "3", 0 },
++				{ "rxgains5ghelnagaina1", "3", 0 },
++				{ "rxgains5ghelnagaina2", "4", 0 },
++				{ "rxgains5ghtrelnabypa0", "1", 0 },
++				{ "rxgains5ghtrelnabypa1", "1", 0 },
++				{ "rxgains5ghtrelnabypa2", "1", 0 },
++				{ "rxgains5ghtrisoa0", "5", 0 },
++				{ "rxgains5ghtrisoa1", "4", 0 },
++				{ "rxgains5ghtrisoa2", "4", 0 },
++				{ "rxgains5gmelnagaina0", "3", 0 },
++				{ "rxgains5gmelnagaina1", "4", 0 },
++				{ "rxgains5gmelnagaina2", "4", 0 },
++				{ "rxgains5gmtrelnabypa0", "1", 0 },
++				{ "rxgains5gmtrelnabypa1", "1", 0 },
++				{ "rxgains5gmtrelnabypa2", "1", 0 },
++				{ "rxgains5gmtrisoa0", "5", 0 },
++				{ "rxgains5gmtrisoa1", "4", 0 },
++				{ "rxgains5gmtrisoa2", "4", 0 },
++				{ "rxgains5gtrelnabypa0", "1", 0 },
++				{ "rxgains5gtrelnabypa1", "1", 0 },
++				{ "rxgains5gtrelnabypa2", "1", 0 },
++				{ "rxgains5gtrisoa0", "7", 0 },
++				{ "rxgains5gtrisoa1", "6", 0 },
++				{ "rxgains5gtrisoa2", "5", 0 },
++				{ "sar2g", "18", 0 },
++				{ "sar5g", "15", 0 },
++				{ "sb20in40hrpo", "0", 0 },
++				{ "sb20in40lrpo", "0", 0 },
++				{ "sb20in80and160hr5ghpo", "0", 0 },
++				{ "sb20in80and160hr5glpo", "0", 0 },
++				{ "sb20in80and160hr5gmpo", "0", 0 },
++				{ "sb20in80and160lr5ghpo", "0", 0 },
++				{ "sb20in80and160lr5glpo", "0", 0 },
++				{ "sb20in80and160lr5gmpo", "0", 0 },
++				{ "sb40and80hr5ghpo", "0", 0 },
++				{ "sb40and80hr5glpo", "0", 0 },
++				{ "sb40and80hr5gmpo", "0", 0 },
++				{ "sb40and80lr5ghpo", "0", 0 },
++				{ "sb40and80lr5glpo", "0", 0 },
++				{ "sb40and80lr5gmpo", "0", 0 },
++				{ "sromrev", "11", 0 },
++				{ "subband5gver", "0x4", 0 },
++				{ "subvid", "0x14e4", 0 },
++				{ "tempcorrx", "0x3f", 0 },
++				{ "tempoffset", "255", 0 },
++				{ "tempsense_option", "0x3", 0 },
++				{ "tempsense_slope", "0xff", 0 },
++				{ "temps_hysteresis", "15", 0 },
++				{ "temps_period", "15", 0 },
++				{ "tempthresh", "255", 0 },
++				{ "tssifloor2g", "0x3ff", 0 },
++				{ "tssifloor5g", "0x3ff,0x3ff,0x3ff,0x3ff", 0 },
++				{ "tssiposslope2g", "1", 0 },
++				{ "tssiposslope5g", "1", 0 },
++				{ "tworangetssi2g", "0", 0 },
++				{ "tworangetssi5g", "0", 0 },
++				{ "txchain", "7", 0 },
++				{ "xtalfreq", "65535", 0 },
++				{ 0, 0, 0 }
++			};
++
++			set_defaults(dir868lab_pci_1_1_params, "pci/1/1/%s");
++			set_defaults(dir868lab_pci_2_1_params, "pci/2/1/%s");
++		}
++		break;
+ 	case MODEL_WS880:
+ 		mfr = "Huawei";
+ 		name = "WS880";

@@ -1,0 +1,13 @@
+--- fresh-tomato-clean/release/src-rt-6.x.4708/router/rc/buttons.c	2025-01-16 13:57:55.262261100 +1000
++++ fresh-tomato-modified/release/src-rt-6.x.4708/router/rc/buttons.c	2025-01-18 05:53:31.570364145 +1000
+@@ -389,6 +389,10 @@
+ 		ses_mask = 1 << 7; /* wps button (active LOW) */
+ 		ses_led = LED_DIAG; /* Use LED Diag for feedback if a button is pushed */
+ 		break;
++	case MODEL_DSL2890AL:
++		reset_mask = 1 << 8; /* Reset button (Active pulled down), Pin 8 (Back button) */
++		ses_mask = 1 << 11; /* Wifi Toggle Button, Pin 11 (Side button) */
++		break;
+ 	case MODEL_AC15:
+ 		reset_mask = 1 << 11; /* reset button (active LOW) */
+ 		ses_mask = 1 << 7; /* wps button (active LOW) */

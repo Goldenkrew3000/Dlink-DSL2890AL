@@ -1,0 +1,10 @@
+--- fresh-tomato-clean/release/src-rt-6.x.4708/help.mak	2025-01-16 13:57:46.186193872 +1000
++++ fresh-tomato-modified/release/src-rt-6.x.4708/help.mak	2025-01-16 12:16:35.311097982 +1000
+@@ -12,6 +12,7 @@
+ 	@echo " f9ke           Belkin F9K1113v2 VPN"
+ 	@echo "DLINK ARM Builds"
+ 	@echo " dir868l        DLINK DIR868L"
++	@echo " dsl2890al      DLINK DSL-2890AL"
+ 	@echo "NETGEAR ARM Builds"
+ 	@echo " r7000e         R7000/R6900/R6700v1 build VPN"
+ 	@echo " r7000z         R7000/R6900/R6700v1 build AIO"
